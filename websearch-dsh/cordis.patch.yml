@@ -1,0 +1,43 @@
+# websearch-dsh bundle layer.
+#
+# Mounted by listing "websearch-dsh" in the profile's `dsh.profile.bundles`
+# (see README). Two entries:
+#
+#   1. insert — the plugin row. Per DSH doctrine the row config carries
+#      references only, never secrets: provider keys are resolved per
+#      search from the credentials seam (the same ref names the web
+#      Credentials screen writes) or the process environment.
+#      `envKeys`/`priority` are deliberately NOT restated here: an explicit
+#      value in a patch layer overrides the code defaults, so a restated
+#      list would silently pin whatever the code had at bundle-authoring
+#      time (the same lesson as the gmail plugin's stale `scopes`
+#      regression). The single source of truth is DEFAULT_ENV_KEYS /
+#      DEFAULT_PRIORITY in src/config.js; to customize, add those keys to
+#      YOUR OWN profile patch layer (applied after this one).
+#   2. web    — points the harness's web capability seam at this
+#      composite provider, so the built-in web_search tool is served by
+#      the multi-provider chain instead of the DeepSeek route (which
+#      dead-ends without DEEPSEEK_API_KEY). The `web` row config is
+#      exactly {searchProvider} in the dsh-base layer, so a whole-config
+#      replacement is safe. The profile's own cordis.patch.yml applies
+#      after this layer and can point searchProvider back to
+#      deepseek-official (or any other provider) to restore the default.
+- insert:
+    - id: search-multi
+      name: 'websearch-dsh'
+      config:
+        # Per-provider request budget (ms) before the chain moves on.
+        providerTimeoutMs: 10000
+        # Provenance note on the web_search result:
+        #   off | on-fallback | always
+        # on-fallback = note only when keyless DuckDuckGo served the
+        # search (i.e. the fallback actually happened).
+        provenance: on-fallback
+        # Model-facing context section (disabled = zero tokens).
+        context:
+          enabled: true
+          order: 118
+- id: web
+  name: '@deepseek-ai/dsh-web'
+  config:
+    searchProvider: websearch-dsh
